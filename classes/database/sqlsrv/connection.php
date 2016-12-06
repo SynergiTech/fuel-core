@@ -27,10 +27,12 @@ class Database_Sqlsrv_Connection extends \Database_PDO_Connection
 	protected function __construct($name, array $config)
 	{
 		// this driver only works on Windows
-		if (php_uname('s') !== 'Windows')
+		if (strpos(php_uname('s'), 'Windows') === false)
 		{
 			throw new \Database_Exception('The "SQLSRV" database driver works only on Windows. On *nix, use the "DBLib" driver instead.');
 		}
+
+		$this->_schema = new Database_Sqlsrv_Schema($name, $this);
 
 		parent::__construct($name, $config);
 	}
@@ -165,6 +167,12 @@ class Database_Sqlsrv_Connection extends \Database_PDO_Connection
 			// unknown charset, use the default encoding
 			$this->_connection->setAttribute(\PDO::SQLSRV_ATTR_ENCODING, \PDO::SQLSRV_ENCODING_DEFAULT);
 		}
+	}
+
+	public function select(array $args = null)
+	{
+		$instance = new Database_Sqlsrv_Builder_Select($args);
+		return $instance->set_connection($this);
 	}
 
 }
