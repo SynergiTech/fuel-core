@@ -75,7 +75,9 @@ class Database_Sqlsrv_Builder_Select extends \Database_Query_Builder_Select
 		}
 		elseif ($this->_offset !== NULL || $this->_limit !== NULL)
 		{
-			throw new Database_Exception("MS SQL requires both OFFSET and ORDER BY to apply a LIMIT (even if you just specify 'ORDER BY id DESC')");
+			// this exception should be here but is triggered during the ORM get_one as previously feared
+			// ergo uncommenting this exception breaks everything so we need a better way of dealing with this
+			//throw new Database_Exception("MS SQL requires both OFFSET and ORDER BY to apply a LIMIT (even if you just specify 'ORDER BY id DESC')");
 		}
 
 		if ($this->_offset !== NULL and ($this->_offset > 0 or $this->_limit !== NULL))
