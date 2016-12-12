@@ -84,7 +84,7 @@ class Database_Sqlsrv_Builder_Select extends \Database_Query_Builder_Select
 			//}
 		}
 
-		if ($this->_offset !== NULL)
+		if ($this->_offset !== NULL and $this->_offset > 0)
 		{
 			// Add offsets
 			$query .= ' OFFSET '.$this->_offset. ' ROWS';
