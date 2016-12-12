@@ -75,16 +75,10 @@ class Database_Sqlsrv_Builder_Select extends \Database_Query_Builder_Select
 		}
 		elseif ($this->_offset !== NULL || $this->_limit !== NULL)
 		{
-			// MS SQL cannot handle LIMIT without both OFFSET and ORDER BY
-			// - could use something like this but not ideal:
-			//		$query .= ' '.$this->_compile_order_by($db, array('id', 'ASC'));
-			//if ($this->_limit > 1) {
-			//	//hope they are using the ORM get_one function
-			//	throw new Exception???
-			//}
+			throw new Database_Exception("MS SQL requires both OFFSET and ORDER BY to apply a LIMIT (even if you just specify 'ORDER BY id DESC')");
 		}
 
-		if ($this->_offset !== NULL and $this->_offset > 0)
+		if ($this->_offset !== NULL and ($this->_offset > 0 or $this->_limit !== NULL))
 		{
 			// Add offsets
 			$query .= ' OFFSET '.$this->_offset. ' ROWS';
