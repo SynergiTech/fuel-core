@@ -175,4 +175,9 @@ class Database_Sqlsrv_Connection extends \Database_PDO_Connection
 		return $instance->set_connection($this);
 	}
 
+	public function delete($table = null)
+	{
+		$instance = new Database_Sqlsrv_Builder_Delete($table);
+		return $instance->set_connection($this);
+	}
 }
