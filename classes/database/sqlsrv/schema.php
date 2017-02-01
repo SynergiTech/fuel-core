@@ -201,12 +201,38 @@ class Database_Sqlsrv_Schema extends \Database_Schema
 		return ', '.implode(',', $fk_list);
 	}
 
-	/*public function alter_fields($type, $table, $fields)
+	public function alter_fields($type, $table, $fields)
 	{
+		// when altering a table, mssql specifies the type once for the whole query, mysql specifies it on each line
+		$sql = 'ALTER TABLE '.$this->_connection->quote_identifier($this->_connection->table_prefix($table)).' ';
 
+		if ($type === 'DROP')
+		{
+			if ( ! is_array($fields))
+			{
+				$fields = array($fields);
+			}
+
+			$drop_fields = array();
+			foreach ($fields as $field)
+			{
+				$drop_fields[] = $this->_connection->quote_identifier($field);
+			}
+			$sql .= 'DROP '.implode(', ', $drop_fields);
+		}
+		else
+		{
+			$use_brackets = ! in_array($type, array('ADD', 'CHANGE', 'MODIFY'));
+			$use_brackets and $sql .= $type.' ';
+			$use_brackets and $sql .= '(';
+			$sql .= (( ! $use_brackets) ? $type.' ' : '') . $this->process_fields($fields);
+			$use_brackets and $sql .= ')';
+		}
+
+		return $this->_connection->query(0, $sql, false);
 	}
 
-	public function table_maintenance($operation, $table)
+	/*public function table_maintenance($operation, $table)
 	{
 
 	}
