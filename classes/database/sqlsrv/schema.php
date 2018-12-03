@@ -218,7 +218,7 @@ class Database_Sqlsrv_Schema extends \Database_Schema
 			{
 				$drop_fields[] = $this->_connection->quote_identifier($field);
 			}
-			$sql .= 'DROP '.implode(', ', $drop_fields);
+			$sql .= 'DROP COLUMN '.implode(', ', $drop_fields);
 		}
 		else
 		{
