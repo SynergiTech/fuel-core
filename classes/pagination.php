@@ -510,7 +510,7 @@ class Pagination
 		{
 			if ( ! ctype_digit((string) $this->config['uri_segment']))
 			{
-				$this->config['calculated_page'] = \Input::get($this->config['uri_segment'], null);
+				$this->config['calculated_page'] = $this->_validate('current_page', \Input::get($this->config['uri_segment'], null));
 			}
 			else
 			{
@@ -708,7 +708,7 @@ class Pagination
 			case 'total_pages':
 			case 'num_links':
 				// make sure it's an integer
-				if ($value != intval($value))
+				if ($value !== intval($value))
 				{
 					$value = 1;
 				}
