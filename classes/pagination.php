@@ -679,12 +679,7 @@ class Pagination
 			case 'offset':
 			case 'total_items':
 				// make sure it's an integer
-				if ($value != intval($value))
-				{
-					$value = 0;
-				}
-				// and that it's within bounds
-				$value = max(0, $value);
+				$value = max(0, (int) $value);
 			break;
 
 			// integer or string
@@ -692,12 +687,7 @@ class Pagination
 				if (is_numeric($value))
 				{
 					// make sure it's an integer
-					if ($value != intval($value))
-					{
-						$value = 1;
-					}
-					// and that it's within bounds
-					$value = max(1, $value);
+					$value = max(1, (int) $value);
 				}
 			break;
 
@@ -708,12 +698,7 @@ class Pagination
 			case 'total_pages':
 			case 'num_links':
 				// make sure it's an integer
-				if ($value !== intval($value))
-				{
-					$value = 1;
-				}
-				// and that it's within bounds
-				$value = max(1, $value);
+				$value = max(1, (int) $value);
 			break;
 
 			// validate booleans
