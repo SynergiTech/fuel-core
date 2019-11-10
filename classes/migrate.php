@@ -81,23 +81,27 @@ class Migrate
 			->order_by('migration', 'ASC')
 			->execute(static::$connection)
 			->as_array();
+		$migrations = array_map(function ($migration) {
+			return Migrate\Migration::from_db($migration);
+		}, $migrations);
 
-		foreach($migrations as $migration)
+		foreach ($migrations as $migration)
 		{
-			// convert the db migrations to match the config file structure
-			isset(static::$migrations[$migration['type']]) or static::$migrations[$migration['type']] = array();
-			static::$migrations[$migration['type']][$migration['name']][] = $migration['migration'];
+			// convert the db migrations to match the structure of the config file
+			isset(static::$migrations[$migration->get_type()]) or static::$migrations[$migration->get_type()] = array();
+			static::$migrations[$migration->get_type()][$migration->get_name()][] = $migration->get_file_name();
 
 			// make sure we have this in the config too
-			$config = \Config::get('migrations.version.'.$migration['type'].'.'.$migration['name'], array());
+			$config = \Config::get('migrations.version.'.$migration->get_type().'.'.$migration->get_name(), array());
 			is_array($config) or $config = array();
-			if ( ! in_array($migration['migration'], $config))
+			if ( ! in_array($migration->get_file_name(), $config))
 			{
-				$config[] = $migration['migration'];
+				$config[] = $migration->get_file_name();
 				sort($config);
-				\Config::set('migrations.version.'.$migration['type'].'.'.$migration['name'], $config);
+				\Config::set('migrations.version.'.$migration->get_type().'.'.$migration->get_name(), $config);
 			}
 		}
+
 		// write the updated config
 		\Config::save(\Fuel::$env.DS.'migrations', 'migrations');
 	}
@@ -247,8 +251,8 @@ class Migrate
 		// any migrations defined?
 		if ( ! empty($current))
 		{
-			// get the last entry
-			$current = end($current);
+			// get the version of the last entry
+			$current = (new Migrate\Migration(end($current)))->get_version();
 
 			// get the available migrations before the last current one
 			$migrations = static::find_migrations($name, $type, $version, $current, 'down');
@@ -311,7 +315,7 @@ class Migrate
 		foreach ($migrations as $ver => $migration)
 		{
 			logger(\Fuel::L_INFO, 'Migrating to version: '.$ver);
-			$result = static::_run($migration['class'], $method);
+			$result = static::_run($migration->load(static::$prefix), $method);
 			if ($result === false)
 			{
 				logger(\Fuel::L_INFO, 'Skipped migration to '.$ver.'.');
@@ -319,7 +323,7 @@ class Migrate
 				return $done;
 			}
 
-			$file = basename($migration['path'], '.php');
+			$file = $migration->get_file_name();
 			$method == 'up' ? static::write_install($name, $type, $file) : static::write_revert($name, $type, $file);
 			$done[] = $file;
 		}
@@ -406,7 +410,7 @@ class Migrate
 	 */
 	protected static function find_migrations($name, $type, $start = null, $end = null, $direction = 'up')
 	{
-		// Load all *_*.php files in the migrations path
+		// Load all files in the migrations path
 		$method = '_find_'.$type;
 		if ( ! $files = static::$method($name))
 		{
@@ -419,41 +423,22 @@ class Migrate
 		// storage for the result
 		$migrations = array();
 
-		// normalize start and end values
-		if ( ! is_null($start))
-		{
-			// if we have a prefix, use that
-			($pos = strpos($start, '_')) === false or $start = ltrim(substr($start, 0, $pos), '0');
-			is_numeric($start) and $start = (int) $start;
-		}
-		if ( ! is_null($end))
-		{
-			// if we have a prefix, use that
-			($pos = strpos($end, '_')) === false or $end = ltrim(substr($end, 0, $pos), '0');
-			is_numeric($end) and $end = (int) $end;
-		}
-
 		// filter the migrations out of bounds
 		foreach ($files as $file)
 		{
-			// get the version for this migration and normalize it
-			$migration = basename($file);
-			($pos = strpos($migration, '_')) === false or $migration = ltrim(substr($migration, 0, $pos), '0');
-			is_numeric($migration) and $migration = (int) $migration;
-
 			// add the file to the migrations list if it's in between version bounds
-			if ((is_null($start) or $migration > $start) and (is_null($end) or $migration <= $end))
+			if ($file->is_within($start, $end))
 			{
 				// see if it is already installed
-				if ( in_array(basename($file, '.php'), $current))
+				if (in_array($file->get_file_name(), $current))
 				{
 					// already installed. store it only if we're going down
-					$direction == 'down' and $migrations[$migration] = array('path' => $file);
+					$direction == 'down' and $migrations[$file->get_version()] = $file;
 				}
 				else
 				{
 					// not installed yet. store it only if we're going up
-					$direction == 'up' and $migrations[$migration] = array('path' => $file);
+					$direction == 'up' and $migrations[$file->get_version()] = $file;
 				}
 			}
 		}
@@ -462,37 +447,7 @@ class Migrate
 		// But first let's make sure that everything is the way it should be
 		foreach ($migrations as $ver => $migration)
 		{
-			// get the migration filename from the path
-			$migration['file'] = basename($migration['path']);
-
-			// make sure the migration filename has a valid format
-			if (preg_match('/^.*?_(.*).php$/', $migration['file'], $match))
-			{
-				// determine the classname for this migration
-				$class_name = ucfirst(strtolower($match[1]));
-
-				// load the file and determine the classname
-				include_once $migration['path'];
-				$class = static::$prefix.$class_name;
-
-				// make sure it exists in the migration file loaded
-				if ( ! class_exists($class, false))
-				{
-					throw new \FuelException(sprintf('Migration "%s" does not contain expected class "%s"', $migration['path'], $class));
-				}
-
-				// and that it contains an "up" and "down" method
-				if ( ! is_callable(array($class, 'up')) or ! is_callable(array($class, 'down')))
-				{
-					throw new \FuelException(sprintf('Migration class "%s" must include public methods "up" and "down"', $name));
-				}
-
-				$migrations[$ver]['class'] = $class;
-			}
-			else
-			{
-				throw new \FuelException(sprintf('Invalid Migration filename "%s"', $migration['path']));
-			}
+			$migration->load(static::$prefix);
 		}
 
 		// make sure the result is sorted properly with all version types
@@ -558,7 +513,7 @@ class Migrate
 
 		foreach(new \GlobIterator(APPPATH.\Config::get('migrations.folder').'*_*.php') as $file)
 		{
-			$found[] = $file->getPathname();
+			$found[] = new Migrate\Migration(null, $file->getPathname(), 'app');
 		}
 
 		return $found;
@@ -571,19 +526,16 @@ class Migrate
 	 *
 	 * @return	array
 	 */
-	protected static function _find_module($name = null)
+	protected static function _find_module($name = '*')
 	{
-		is_null($name) and $name = '*';
-
 		$files = array();
 
 		foreach (\Config::get('module_paths') as $m)
 		{
 			foreach(new \GlobIterator($m.$name.DS.\Config::get('migrations.folder').'*_*.php') as $file)
 			{
-				$files[] = $file->getPathname();
+				$files[] = new Migrate\Migration(null, $file->getPathname(), 'module', $name);
 			}
-
 			// if we were looking for a specific module, bail out when we've found it
 			if ($name !== '*' and ! empty($files))
 			{
@@ -601,10 +553,8 @@ class Migrate
 	 *
 	 * @return	array
 	 */
-	protected static function _find_package($name = null)
+	protected static function _find_package($name = '*')
 	{
-		is_null($name) and $name = '*';
-
 		$files = array();
 
 		// find a package
@@ -612,7 +562,7 @@ class Migrate
 		{
 			foreach(new \GlobIterator($p.$name.DS.\Config::get('migrations.folder').'*_*.php') as $file)
 			{
-				$files[] = $file->getPathname();
+				$files[] = new Migrate\Migration(null, $file->getPathname(), 'package', $name);
 			}
 
 			// if we were looking for a specific package, bail out when we've found it
@@ -708,5 +658,35 @@ class Migrate
 
 		// set connection to default
 		static::$connection === null or \DBUtil::set_connection(null);
+	}
+
+	public static function get_installed()
+	{
+		return static::$migrations;
+	}
+
+	public static function get_app_migrations()
+	{
+		return self::_find_app();
+	}
+
+	public static function get_module_migrations($name)
+	{
+		return self::_find_module($name);
+	}
+
+	public static function get_package_migrations($name)
+	{
+		return self::_find_migrations($name);
+	}
+
+	public static function table()
+	{
+		return self::$table;
+	}
+
+	public static function get_timestamp_format()
+	{
+		return 'Y_m_d_His';
 	}
 }
