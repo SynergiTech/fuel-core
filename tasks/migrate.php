@@ -425,6 +425,62 @@ class Migrate
 		}
 	}
 
+	protected static function fix_migration_names($migrations, $type, $name)
+	{
+		$timestamp = time();
+		foreach ($migrations as $migration) {
+			if ($migration->hasOldNameFormat()) {
+				continue;
+			}
+			$timestamp = $migration::get_comparable_value($migration->get_version());
+			break;
+		}
+
+		$i = count($migrations);
+
+		foreach ($migrations as $migration) {
+			if (!$migration->hasOldNameFormat()) {
+				break;
+			}
+			$i--;
+			$adjusted_timestamp = $timestamp - $i;
+			$new_version = (new \DateTime("@{$adjusted_timestamp}", new \DateTimeZone('UTC')))->format(\Migrate::get_timestamp_format());
+			$new_file_name = $new_version . "_" . strtolower($migration->get_class_name());
+			\Cli::write("Renaming {$migration->get_file_name()} to {$new_file_name}");
+
+			rename($migration->get_location(), dirname($migration->get_location()) . DS . $new_file_name . '.php');
+
+			$installed = \Config::get("migrations.version.$type.$name");
+			$searchKey = array_search($migration->get_file_name(), $installed);
+			if ($searchKey !== false) {
+				$installed[$searchKey] = $new_file_name;
+				\Cli::write("Updating database for {$migration->get_file_name()}");
+				\DB::update(\Migrate::table())
+					->value('migration', $new_file_name)
+					->where('type', $type)
+					->where('name', $name)
+					->where('migration', $migration->get_file_name())
+					->execute();
+				\Config::set("migrations.version.$type.$name", $installed);
+				\Config::save(\Fuel::$env.DS.'migrations', 'migrations');
+			}
+		}
+	}
+
+	protected static function fix_names()
+	{
+		\Cli::write('Going to fix the names of all out-dated migration files');
+
+		self::fix_migration_names(\Migrate::get_app_migrations(), 'app', 'default');
+
+		foreach (static::$modules as $module) {
+			$migrations = array_merge($migrations, \Migrate::get_module_migrations($module));
+		}
+		foreach (static::$packages as $package) {
+			$migrations = array_merge($migrations, \Migrate::get_module_migrations($package));
+		}
+	}
+
 	/**
 	 * Shows basic help instructions for using migrate in oil
 	 */

@@ -10,6 +10,7 @@ class Migration
 	private $file_name;
 	private $class_name;
 	private $version;
+	private $name_format = 'new';
 
 	public static function from_db($row)
 	{
@@ -44,6 +45,7 @@ class Migration
 			// old-style
 			$this->version = $match[1];
 			$this->class_name = ucfirst($match[2]);
+			$this->name_format = 'old';
 		}
 
 		if (!$this->version or !$this->class_name) {
@@ -84,6 +86,11 @@ class Migration
 	public function get_name()
 	{
 		return $this->name;
+	}
+
+	public function hasOldNameFormat()
+	{
+		return $this->name_format === 'old';
 	}
 
 	public function load($namespace = '')
