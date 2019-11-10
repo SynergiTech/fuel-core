@@ -102,8 +102,7 @@ class Response
 	}
 
 	/**
-	 * Redirects to another uri/url.  Sets the redirect header,
-	 * sends the headers and exits.  Can redirect via a Location header
+	 * Redirects to another uri/url. Can redirect via a Location header
 	 * or using a refresh header.
 	 *
 	 * The refresh header works better on certain servers like IIS.
@@ -138,13 +137,8 @@ class Response
 		{
 			$response->set_header('Refresh', '0;url='.$url);
 		}
-		else
-		{
-			return;
-		}
 
-		$response->send(true);
-		exit;
+		return $response;
 	}
 
 	/**
