@@ -135,7 +135,6 @@ function setup_autoloader()
 		'Fuel\\Core\\Cache_Storage_Apc'                => COREPATH.'classes/cache/storage/apc.php',
 		'Fuel\\Core\\Cache_Storage_File'               => COREPATH.'classes/cache/storage/file.php',
 		'Fuel\\Core\\Cache_Storage_Memcached'          => COREPATH.'classes/cache/storage/memcached.php',
-		'Fuel\\Core\\Cache_Storage_Redis'              => COREPATH.'classes/cache/storage/redis.php',
 		'Fuel\\Core\\Cache_Storage_Xcache'             => COREPATH.'classes/cache/storage/xcache.php',
 
 		'Fuel\\Core\\Config'                           => COREPATH.'classes/config.php',
@@ -293,9 +292,6 @@ function setup_autoloader()
 		'Fuel\\Core\\Request_Curl'                     => COREPATH.'classes/request/curl.php',
 		'Fuel\\Core\\Request_Soap'                     => COREPATH.'classes/request/soap.php',
 
-		'Fuel\\Core\\Redis_Db'                         => COREPATH.'classes/redis/db.php',
-		'Fuel\\Core\\RedisException'                   => COREPATH.'classes/redis/db.php',
-
 		'Fuel\\Core\\Response'                         => COREPATH.'classes/response.php',
 
 		'Fuel\\Core\\Route'                            => COREPATH.'classes/route.php',
@@ -312,7 +308,6 @@ function setup_autoloader()
 		'Fuel\\Core\\Session_Cookie'                   => COREPATH.'classes/session/cookie.php',
 		'Fuel\\Core\\Session_File'                     => COREPATH.'classes/session/file.php',
 		'Fuel\\Core\\Session_Memcached'                => COREPATH.'classes/session/memcached.php',
-		'Fuel\\Core\\Session_Redis'                    => COREPATH.'classes/session/redis.php',
 		'Fuel\\Core\\Session_Exception'                => COREPATH.'classes/session/exception.php',
 
 		'Fuel\\Core\\Num'                              => COREPATH.'classes/num.php',

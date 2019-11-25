@@ -97,22 +97,4 @@ return array(
 		'profiling'    => false,
 		'readonly'     => false,
 	),
-
-	/**
-	 * -------------------------------------------------------------------------
-	 *  Redis
-	 * -------------------------------------------------------------------------
-	 *
-	 *  Base Redis configurations.
-	 *
-	 */
-
-	'redis' => array(
-		'default' => array(
-			'hostname' => '127.0.0.1',
-			'port'     => 6379,
-			'timeout'  => null,
-			'database' => 0,
-		),
-	),
 );

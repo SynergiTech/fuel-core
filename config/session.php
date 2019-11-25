@@ -361,29 +361,4 @@ return array(
 
 		'gc_probability' => 5,
 	),
-
-	// specific configuration settings for redis based sessions
-	/**
-	 * -------------------------------------------------------------------------
-	 *  Configurations - Redis Based
-	 * -------------------------------------------------------------------------
-	 *
-	 *  Special configuration settings for Redis based sessions.
-	 *
-	 */
-
-	'redis' => array(
-		'cookie_name' => 'fuelrid',
-
-		/**
-		 * ---------------------------------------------------------------------
-		 *  Database Name
-		 * ---------------------------------------------------------------------
-		 *
-		 *  Name of the Redis database to use (as configured in config/db.php).
-		 *
-		 */
-
-		'database' => 'default',
-	),
 );

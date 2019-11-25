@@ -195,10 +195,6 @@ class Fuel
 		// Always load classes, config & language set in always_load.php config
 		static::always_load();
 
-		// BC FIX FOR APPLICATIONS <= 1.6.1, makes Redis_Db available as Redis,
-		// like it was in versions before 1.7
-		class_exists('Redis', false) or class_alias('Redis_Db', 'Redis');
-
 		// BC FIX FOR PHP < 7.0 to make the error class available
 		if (PHP_VERSION_ID < 70000)
 		{
