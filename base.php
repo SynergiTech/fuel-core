@@ -10,12 +10,6 @@
  * @link       http://fuelphp.com
  */
 
-// load PHP 5.6+ specific code
-if (PHP_VERSION_ID >= 50600)
-{
-	include "base56.php";
-}
-
 /**
  * Check if we're running on a Windows platform
  */
@@ -399,7 +393,7 @@ if ( ! function_exists('get_common_path'))
 }
 
 /**
- * Faster equivalent of call_user_func_array
+ * Faster equivalent of call_user_func_array using variadics
  */
 if ( ! function_exists('call_fuel_func_array'))
 {
@@ -411,7 +405,7 @@ if ( ! function_exists('call_fuel_func_array'))
 			$callback = explode('::', $callback);
 		}
 
-		// if an array is passed, extract the object and method to call
+		// dynamic call on an object?
 		if (is_array($callback) and isset($callback[1]) and is_object($callback[0]))
 		{
 			// make sure our arguments array is indexed
@@ -422,119 +416,24 @@ if ( ! function_exists('call_fuel_func_array'))
 
 			list($instance, $method) = $callback;
 
-			// calling the method directly is faster then call_user_func_array() !
-			switch ($count)
-			{
-				case 0:
-					return $instance->$method();
-
-				case 1:
-					return $instance->$method($args[0]);
-
-				case 2:
-					return $instance->$method($args[0], $args[1]);
-
-				case 3:
-					return $instance->$method($args[0], $args[1], $args[2]);
-
-				case 4:
-					return $instance->$method($args[0], $args[1], $args[2], $args[3]);
-			}
+			return $instance->{$method}(...$args);
 		}
 
+		// static call?
 		elseif (is_array($callback) and isset($callback[1]) and is_string($callback[0]))
 		{
 			list($class, $method) = $callback;
 			$class = '\\'.ltrim($class, '\\');
 
-			// calling the method directly is faster then call_user_func_array() !
-			switch (count($args))
-			{
-				case 0:
-					return $class::$method();
-
-				case 1:
-					return $class::$method($args[0]);
-
-				case 2:
-					return $class::$method($args[0], $args[1]);
-
-				case 3:
-					return $class::$method($args[0], $args[1], $args[2]);
-
-				case 4:
-					return $class::$method($args[0], $args[1], $args[2], $args[3]);
-			}
+			return $class::{$method}(...$args);
 		}
 
 		// if it's a string, it's a native function or a static method call
 		elseif (is_string($callback) or $callback instanceOf \Closure)
 		{
 			is_string($callback) and $callback = ltrim($callback, '\\');
-
-			// calling the method directly is faster then call_user_func_array() !
-			switch (count($args))
-			{
-				case 0:
-					return $callback();
-
-				case 1:
-					return $callback($args[0]);
-
-				case 2:
-					return $callback($args[0], $args[1]);
-
-				case 3:
-					return $callback($args[0], $args[1], $args[2]);
-
-				case 4:
-					return $callback($args[0], $args[1], $args[2], $args[3]);
-			}
 		}
 
-		// fallback, handle the old way
-		return call_user_func_array($callback, $args);
-	}
-}
-
-/**
- * hash_pbkdf2() implementation for PHP < 5.5.0
- */
-if ( ! function_exists('hash_pbkdf2'))
-{
-    /* PBKDF2 Implementation (described in RFC 2898)
-     *
-     *  @param string a   hash algorithm to use
-     *  @param string p   password
-     *  @param string s   salt
-     *  @param int    c   iteration count (use 1000 or higher)
-     *  @param int    kl  derived key length
-     *  @param bool   r   when set to TRUE, outputs raw binary data. FALSE outputs lowercase hexits.
-     *
-     *  @return string derived key
-     */
-    function hash_pbkdf2($a, $p, $s, $c, $kl = 0, $r = false)
-    {
-        $hl = strlen(hash($a, null, true)); # Hash length
-        $kb = ceil($kl / $hl);              # Key blocks to compute
-        $dk = '';                           # Derived key
-
-        # Create key
-        for ( $block = 1; $block <= $kb; $block ++ )
-        {
-            # Initial hash for this block
-            $ib = $b = hash_hmac($a, $s . pack('N', $block), $p, true);
-
-            # Perform block iterations
-            for ( $i = 1; $i < $c; $i ++ )
-            {
-                # XOR each iterate
-                $ib ^= ($b = hash_hmac($a, $b, $p, true));
-            }
-            $dk .= $ib; # Append iterated block
-        }
-
-        # Return derived key of correct length
-		return substr($r ? $dk : bin2hex($dk), 0, $kl);
+		return $callback(...$args);
 	}
 }
