@@ -16,6 +16,6 @@
 		"paragonie/sodium_compat": "^1.6",
 		"monolog/monolog": "^1.18.0",
 		"michelf/php-markdown": "1.7.0",
-		"ramsey/uuid": "^3.8"
+		"ramsey/uuid": "^4.1"
 	}
 }
